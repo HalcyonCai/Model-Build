@@ -1,0 +1,716 @@
+{
+    "configurations": [
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "HardwareDebug",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35DK_1",
+                "DISABLE_BOOT=1",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1_DK_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Debug_Messi",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35DK_1",
+                "DISABLE_BOOT=1",
+                "DEBUG=1",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1_DK_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=0"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_Debug_Messi",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35DK_1",
+                "DISABLE_BOOT=1",
+                "DEBUG=1",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1_DK_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=0"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_HardwareDebug",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35DK_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1_DK_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_72C_4_30P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_Debug_S_KFW72C_4_Messi",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=1",
+                "DEBUG=1",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1_DK_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=0"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW35DK_1B",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35DK_1B",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1B_DK_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_35DK_1B_PANASONIC_ACXB09_15P",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35DK_1B",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "COMMON_DRIVEMESSI_35DK_1B_PANASONIC_ACXB09_15P=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72RL_1",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72RL_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "HX_RL_KFW72RL_1=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PANASONIC",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "INDIA_SX_KFW72C_4_18K_3S_DEBUG=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW35RL_1",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35RL_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "HX_RL_KFW35RL_1=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_18K5S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_18K_5S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_MEIBO_00_61",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "MEIBO_KFW72C_4_00_61=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_22K3S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_22K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_22K_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_11K3S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_11K_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_12K3S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_12K_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_12K3S_002",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_12K_3S_002=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_12K3S_003",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_12K_3S_003=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_12K3S_004",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_12K_3S_004=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_12K5S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_12K_5S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_12K5S_002",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_12K_5S_002=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_18K3S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_18K_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_18K3S_002",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_18K_3S_002=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_17K5S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_17K_5S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_18K5S_002",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_18K_5S_002=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_19K3S_HD_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_19K_HD_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_MEIBO_00_63",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "MEIBO_KFW72C_4_00_63=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_MEIBO_00_64",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "MEIBO_KFW72C_4_00_64=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_18K3S_003",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_18K_3S_003=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_18K5S_0424001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_18K_5S_0424001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW35RL_1_LHG",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35RL_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "HX_RL_KFW35RL_1_LHG=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_PGEL_13K3S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "PGEL_KFW72C_4_13K_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_MEIBO_00_66",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "MEIBO_KFW72C_4_00_66=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW35RL_1_GSX098",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35RL_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "HX_RL_KFW35RL_1_GSX098=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72RL_1_90",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72RL_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "HX_RL_KFW72RL_1_90=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW50RL_1_V9C",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW50RL_1",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "HX_RL_KFW50RL_1_GSD145RKQF7JV9C=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_MEIBO_00_67",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "MEIBO_KFW72C_4_00_67=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_IFB",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "IFB_KFW72C_4_18K_3S_DEBUG=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW35CP_9",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35CP_9",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "ZHONGHUIDA_35CP_9_DC_85156825=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW35CP_9_TEST",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW35CP_9",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "ZHONGHUIDA_35CP_9_DC_TEST=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_VOLTAS",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "VOLTAS_KFW72C_4_18K_3S_DEBUG=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        },
+        {
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "name": "Boot_S_KFW72C_4_AMBER_17K3S_001",
+            "defines": [
+                "MODEL_TYPE=MODEL_DEBUG",
+                "BOARD_DRIVER_TYPE=BOARD_S_KFW72C_4_18K09K",
+                "DISABLE_BOOT=0",
+                "DEBUG=0",
+                "MCU_USE_USER_CONFIG=1",
+                "AMBER_KFW72C_4_17K_3S_001=1",
+                "MCU_RENESAS_13T_TYPE=1",
+                "MESSIDRIVESELECTION=1",
+                "MOTOR_F32BEMFMAXRATIO_EEDATA"
+            ]
+        }
+    ],
+    "version": 4
+}

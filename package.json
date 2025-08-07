@@ -1,0 +1,77 @@
+{
+  "name": "vscode-model-creator",
+  "displayName": "C/C++ Model Creator",
+  "description": "Streamlines the creation of new machine model configurations for embedded C/C++ projects by automating multiple file updates.",
+  "version": "1.0.0",
+  "publisher": "Troy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git"
+  },
+  "icon": "images/icon.jpg",
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "c",
+    "cpp",
+    "embedded",
+    "model",
+    "configuration",
+    "automation",
+    "scripting"
+  ],
+  "activationEvents": [
+    "onLanguage:c",
+    "onLanguage:cpp"
+  ],
+  "main": "./out/extension.js",
+  "extensionDependencies": [
+    "ms-vscode.cpptools"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "model-creator.createNewModel",
+        "title": "创建新机型 (Create New Model)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == c || resourceLangId == cpp && resourceFilename =~ /^Config_.*\\\\.h$/",
+          "command": "model-creator.createNewModel",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceLangId == c || resourceLangId == cpp && resourceFilename =~ /^Config_.*\\\\.h$/",
+          "command": "model-creator.createNewModel",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.84.0",
+    "@types/mocha": "^10.0.3",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "eslint": "^8.52.0",
+    "typescript": "^5.2.2",
+    "@vscode/test-electron": "^2.3.6"
+  }
+}
