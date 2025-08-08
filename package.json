@@ -2,11 +2,11 @@
   "name": "vscode-model-creator",
   "displayName": "C/C++ Model Creator",
   "description": "Streamlines the creation of new machine model configurations for embedded C/C++ projects by automating multiple file updates.",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "publisher": "Troy",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git"
+    "url": "https://github.com/HalcyonCai/Model-Build.git"
   },
   "icon": "images/icon.jpg",
   "engines": {
@@ -37,6 +37,10 @@
       {
         "command": "model-creator.createNewModel",
         "title": "创建新机型 (Create New Model)"
+      },
+      {
+        "command": "fan-creator.createNewFan",
+        "title": "创建新风机型号 (Create New Fan Model)"
       }
     ],
     "menus": {
@@ -45,12 +49,22 @@
           "when": "resourceLangId == c || resourceLangId == cpp && resourceFilename =~ /^Config_.*\\\\.h$/",
           "command": "model-creator.createNewModel",
           "group": "navigation"
+        },
+        {
+          "when": "resourceFilename == 'Custom.h'",
+          "command": "fan-creator.createNewFan",
+          "group": "navigation"
         }
       ],
       "explorer/context": [
         {
           "when": "resourceLangId == c || resourceLangId == cpp && resourceFilename =~ /^Config_.*\\\\.h$/",
           "command": "model-creator.createNewModel",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceFilename == 'Custom.h'",
+          "command": "fan-creator.createNewFan",
           "group": "navigation"
         }
       ]

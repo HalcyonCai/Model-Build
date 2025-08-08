@@ -58,6 +58,9 @@ export class ModelCreator {
             await this.updateCustomH(document.uri, referenceModel.name, newModelName);
             await this.handleBinFileAndExecuteGenCode(document.uri, newEepromMacro);
 
+            await vscode.workspace.saveAll();
+            vscode.window.showInformationMessage('所有被修改过的文件都已自动保存。');
+
         } catch (error: any) {
             vscode.window.showErrorMessage(`创建机型失败: ${error.message}`);
             this.outputChannel.appendLine(`[错误] ${error.stack}`);
