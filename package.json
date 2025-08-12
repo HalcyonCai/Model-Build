@@ -1,8 +1,8 @@
 {
   "name": "vscode-model-creator",
-  "displayName": "C/C++ Model Creator",
+  "displayName": "Model Creator",
   "description": "Streamlines the creation of new machine model configurations for embedded C/C++ projects by automating multiple file updates.",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "publisher": "Troy",
   "repository": {
     "type": "git",
@@ -46,7 +46,7 @@
     "menus": {
       "editor/context": [
         {
-          "when": "resourceLangId == c || resourceLangId == cpp && resourceFilename =~ /^Config_.*\\\\.h$/",
+          "when": "(resourceLangId == c || resourceLangId == cpp) && resourceFilename =~ /^Config_.*\\.h$/",
           "command": "model-creator.createNewModel",
           "group": "navigation"
         },
@@ -58,7 +58,7 @@
       ],
       "explorer/context": [
         {
-          "when": "resourceLangId == c || resourceLangId == cpp && resourceFilename =~ /^Config_.*\\\\.h$/",
+          "when": "(resourceLangId == c || resourceLangId == cpp) && resourceFilename =~ /^Config_.*\\.h$/",
           "command": "model-creator.createNewModel",
           "group": "navigation"
         },
