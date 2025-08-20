@@ -21,14 +21,20 @@ interface CppConfiguration {
 export class ModelCreator {
     private outputChannel: vscode.OutputChannel;
 
-    constructor() {
-        this.outputChannel = vscode.window.createOutputChannel("Model Creator");
+    constructor(outputChannel: vscode.OutputChannel) {
+        this.outputChannel = outputChannel;
+    }
+
+    dispose() {
+        this.outputChannel.dispose();
     }
 
     async createNewModel(uri?: vscode.Uri): Promise<void> {
         try {
-            const document = uri ? await vscode.workspace.openTextDocument(uri) : vscode.window.activeTextEditor?.document;
-            if (!document) throw new Error('无法获取当前文档。请打开一个文件。');
+            // 修复：从活动编辑器获取上下文
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) throw new Error('无法获取活动编辑器。');
+            const document = uri ? await vscode.workspace.openTextDocument(uri) : editor.document;
             if (!this.isConfigFile(document.fileName)) throw new Error('当前文件不是一个有效的Config_*.h文件。');
 
             const existingModels = this.parseExistingModels(document.getText());
@@ -37,25 +43,63 @@ export class ModelCreator {
             const commonPrefix = this.getCommonModelPrefix(existingModels);
             if (!commonPrefix) throw new Error('无法从文件中已定义的机型中确定通用前缀 (例如 PGEL)。');
 
-            const selectedTarget = await this.selectTargetConfiguration(document.uri, existingModels, commonPrefix);
-            if (!selectedTarget) { return; }
+            // 最终修复：移除 C/C++ Target 选择，因为它会引入错误的上下文
+            // const selectedTarget = await this.selectTargetConfiguration(document.uri, commonPrefix);
+            // if (!selectedTarget) { return; }
 
-            const referenceModel = await this.selectReferenceModel(existingModels);
+            const position = editor.selection.active;
+            this.outputChannel.appendLine(`[调试] 光标位于第 ${position.line} 行。`);
+
+            const contextualModel = this.findModelAtPosition(existingModels, position);
+            let boardNamePattern: string | null = null;
+            if (contextualModel) {
+                this.outputChannel.appendLine(`[调试] 上下文机型已找到: ${contextualModel.name}`);
+                boardNamePattern = this.extractBoardModelFromName(contextualModel.name);
+                if (boardNamePattern) {
+                    this.outputChannel.appendLine(`[调试] 提取的板卡型号: ${boardNamePattern}`);
+                } else {
+                    this.outputChannel.appendLine(`[调试] 未能从 '${contextualModel.name}' 提取板卡型号。`);
+                }
+            } else {
+                 this.outputChannel.appendLine(`[调试] 未能在光标位置 (line ${position.line}) 找到上下文机型。`);
+            }
+
+            const referenceModel = await this.selectReferenceModel(existingModels, boardNamePattern);
             if (!referenceModel) { return; }
+            this.outputChannel.appendLine(`[信息] 已选择参考机型: ${referenceModel.name}`);
 
-            const newModelName = await this.inputNewModelName(selectedTarget);
+            const newModelName = await this.inputNewModelName(referenceModel.name);
             if (!newModelName) { return; }
+
+            const baseName = path.basename(document.fileName, '.h');
+            const prefix = 'Config_';
+            let customerName = '';
+            if (baseName.toLowerCase().startsWith(prefix.toLowerCase())) {
+                customerName = baseName.substring(prefix.length).toUpperCase();
+            }
+            if (!customerName) {
+                throw new Error(`无法从文件名 ${document.fileName} 中提取客户名。`);
+            }
+            this.outputChannel.appendLine(`[信息] 自动识别客户名: ${customerName}`);
+
+            // 修复：使用新的、更可靠的板卡型号提取逻辑
+            const boardModel = this.extractBoardModelFromName(referenceModel.name);
+            if (!boardModel) {
+                throw new Error(`无法从参考机型 '${referenceModel.name}' 中提取板卡型号。请检查命名规范。`);
+            }
+            this.outputChannel.appendLine(`[信息] 自动提取板卡型号: ${boardModel}`);
 
             const softwareVersion = await this.inputSoftwareVersion();
             const eePromVersion = await this.inputEePromVersion();
             const customCodeName = await this.inputCustomCodeName();
+            const motorTypes = await this.inputMotorTypes(document.uri);
 
-            const newEepromMacro = this.generateEepromMacro(newModelName, eePromVersion);
+            const newEepromMacro = this.generateEepromMacro(boardModel, customerName, eePromVersion);
 
             await this.createModelConfiguration(document, referenceModel, newModelName, newEepromMacro, softwareVersion, customCodeName);
             await this.updateGenCodeBat(document.uri, newEepromMacro);
             await this.updateSystemParaC(document.uri, newEepromMacro, commonPrefix);
-            await this.updateCustomH(document.uri, referenceModel.name, newModelName);
+            await this.updateCustomH(document.uri, referenceModel, newModelName, motorTypes);
             await this.handleBinFileAndExecuteGenCode(document.uri, newEepromMacro);
 
             await vscode.workspace.saveAll();
@@ -119,31 +163,101 @@ export class ModelCreator {
         return models;
     }
     
-    private async selectTargetConfiguration(fileUri: vscode.Uri, existingModels: ModelInfo[], commonPrefix: string): Promise<CppConfiguration | undefined> {
+    /* 
+     * 移除此函数，因为它会引入错误的上下文
+    private async selectTargetConfiguration(fileUri: vscode.Uri, commonPrefix: string): Promise<CppConfiguration | undefined> {
         const allConfigurations = this.getCppConfigurations(fileUri);
         if (!allConfigurations) throw new Error('在 .vscode/c_cpp_properties.json 中找不到任何配置。');
         
-        const existingModelNames = new Set(existingModels.map(m => m.name));
-        const filteredConfigurations = allConfigurations.filter(config => {
-            const modelName = this.extractModelNameFromDefines(config.defines);
-            return modelName && !existingModelNames.has(modelName) && modelName.startsWith(commonPrefix);
-        });
+        let configurationsToShow = allConfigurations.filter(config => 
+            config.name.toUpperCase().includes(commonPrefix.toUpperCase())
+        );
 
-        if (filteredConfigurations.length === 0) throw new Error(`没有找到与前缀 '${commonPrefix}' 匹配的、且尚未在当前文件中定义的 C/C++ Target。`);
+        if (configurationsToShow.length === 0) {
+            vscode.window.showWarningMessage(`未找到与客户 '${commonPrefix}' 匹配的 C/C++ Target，将显示所有可用 Target。`);
+            configurationsToShow = allConfigurations;
+        }
         
-        const items = filteredConfigurations.map(config => ({ label: config.name, config }));
+        if (configurationsToShow.length === 0) throw new Error(`在 c_cpp_properties.json 中没有找到任何 C/C++ Target。`);
+        
+        const items = configurationsToShow.map(config => ({ label: config.name, config }));
         const selected = await vscode.window.showQuickPick(items, {
             placeHolder: `请选择一个 '${commonPrefix}' 相关的 C/C++ Target`,
             ignoreFocusOut: true,
         });
         return selected?.config;
     }
+    */
+
+    private findVscodeConfig(startUri: vscode.Uri): string | null {
+        let currentDir = path.dirname(startUri.fsPath);
+        
+        while (currentDir !== path.parse(currentDir).root) {
+            const configPath = path.join(currentDir, '.vscode', 'c_cpp_properties.json');
+            if (fs.existsSync(configPath)) {
+                return configPath;
+            }
+            currentDir = path.dirname(currentDir);
+        }
+
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(startUri);
+        if (workspaceFolder) {
+            const configPath = path.join(workspaceFolder.uri.fsPath, '.vscode', 'c_cpp_properties.json');
+            if (fs.existsSync(configPath)) {
+                return configPath;
+            }
+        }
+        
+        return null;
+    }
+
+    private findNextPreprocessorLine(document: vscode.TextDocument, startLine: number): number {
+        for (let i = startLine + 1; i < document.lineCount; i++) {
+            const line = document.lineAt(i).text.trim();
+            if (['#elif', '#else', '#endif'].some(d => line.startsWith(d))) {
+                return i;
+            }
+        }
+        // 作为备选方案，返回最后一个 #endif 的位置
+        for (let i = document.lineCount - 1; i >= 0; i--) {
+            if (document.lineAt(i).text.trim() === '#endif') {
+                return i;
+            }
+        }
+        return -1; // 在有效的C文件中不应发生
+    }
+
+    private extractBoardModelFromName(name: string): string | null {
+        this.outputChannel.appendLine(`[调试] 尝试从 '${name}' 中提取板卡型号。`);
+
+        // 最终修复：按优先级尝试匹配多种已知的板卡型号格式
+        const patterns = [
+            /(KFW\d+C_\d+_(?:AC|DC))/i, // 最优先匹配，例如 KFW35C_7_AC
+            /(KFW\d+CAF)/i,             // 其次，匹配 KFW...CAF...
+            /(KFW\d+C_\d+)/i,            // 最后，匹配基础格式 KFW...C_...
+        ];
+
+        for (const pattern of patterns) {
+            const match = name.match(pattern);
+            if (match && match[1]) {
+                const boardModel = match[1];
+                this.outputChannel.appendLine(`[调试] 提取成功 (使用模式: ${pattern}): '${boardModel}'`);
+                return boardModel;
+            }
+        }
+
+        this.outputChannel.appendLine(`[警告] 所有模式都未能从 '${name}' 中提取板卡型号。`);
+        return null;
+    }
 
     private getCppConfigurations(fileUri: vscode.Uri): CppConfiguration[] | null {
         try {
-            const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
-            if (!workspaceFolder) return null;
-            const configPath = path.join(workspaceFolder.uri.fsPath, '.vscode', 'c_cpp_properties.json');
+            const configPath = this.findVscodeConfig(fileUri);
+            if (!configPath) {
+                this.outputChannel.appendLine(`[警告] 无法在 ${fileUri.fsPath} 的父目录中找到 .vscode/c_cpp_properties.json 文件。`);
+                return null;
+            }
+
             if (fs.existsSync(configPath)) {
                 const configContent = fs.readFileSync(configPath, 'utf8');
                 const jsonContent = configContent.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
@@ -156,8 +270,26 @@ export class ModelCreator {
         return null;
     }
 
-    private async selectReferenceModel(models: ModelInfo[]): Promise<ModelInfo | undefined> {
-        const items = models.map(model => ({ label: model.name, model }));
+    private async selectReferenceModel(models: ModelInfo[], boardNamePattern: string | null): Promise<ModelInfo | undefined> {
+        let modelsToShow = models;
+        this.outputChannel.appendLine(`[调试] selectReferenceModel: 总共 ${models.length} 个机型。`);
+
+        if (boardNamePattern) {
+            this.outputChannel.appendLine(`[调试] 使用板卡型号 '${boardNamePattern}' 进行过滤。`);
+            const filteredModels = models.filter(model => model.name.toUpperCase().includes(boardNamePattern.toUpperCase()));
+            
+            this.outputChannel.appendLine(`[调试] 过滤后剩下 ${filteredModels.length} 个机型。`);
+
+            if (filteredModels.length > 0) {
+                modelsToShow = filteredModels;
+            } else {
+                this.outputChannel.appendLine(`[警告] 未找到与板卡 '${boardNamePattern}' 匹配的参考机型，将显示所有机型。`);
+            }
+        } else {
+            this.outputChannel.appendLine(`[调试] 未提供板卡型号，显示所有机型。`);
+        }
+
+        const items = modelsToShow.map(model => ({ label: model.name, model }));
         const selected = await vscode.window.showQuickPick(items, {
             placeHolder: '请选择一个参考机型',
             ignoreFocusOut: true
@@ -165,11 +297,10 @@ export class ModelCreator {
         return selected?.model;
     }
 
-    private async inputNewModelName(target: CppConfiguration): Promise<string | undefined> {
-        const defaultModelName = this.extractModelNameFromDefines(target.defines);
+    private async inputNewModelName(referenceModelName: string): Promise<string | undefined> {
         return await vscode.window.showInputBox({
             prompt: '请输入新机型的名称',
-            value: defaultModelName || '',
+            value: referenceModelName,
             validateInput: (value) => {
                 if (!value?.trim()) { return '机型名称不能为空。'; }
                 if (!/^[A-Z_][A-Z0-9_]*$/.test(value)) {
@@ -196,8 +327,9 @@ export class ModelCreator {
 
     private async inputEePromVersion(): Promise<string | undefined> {
         return await vscode.window.showInputBox({
-            prompt: '请输入EEPROM版本号 (例如: 195B)，可留空',
+            prompt: '请输入EEPROM版本号 (例如: 1980)',
             validateInput: (value) => {
+                if (!value?.trim()) { return 'EEPROM版本号不能为空。'; }
                 if (value && !/^[0-9a-zA-Z]+$/.test(value)) { return '版本号只能包含字母和数字'; }
                 return null;
             },
@@ -216,31 +348,124 @@ export class ModelCreator {
         });
     }
 
-    private extractModelNameFromDefines(defines: string[]): string | null {
+    private async parseMotorModels(configFileUri: vscode.Uri, motorType: 'fan' | 'compressor'): Promise<string[]> {
+        const customHPath = path.resolve(path.dirname(configFileUri.fsPath), '../../../Driver/DrivePublicFunction/DrivePublicFunction_No4/Custom.h');
+        this.outputChannel.appendLine(`[信息] 正在从 ${customHPath} 解析 ${motorType} 型号。`);
+
+        if (!fs.existsSync(customHPath)) {
+            this.outputChannel.appendLine(`[警告] 在解析电机型号时未找到 Custom.h 文件。`);
+            return [];
+        }
+    
+        try {
+            const content = fs.readFileSync(customHPath, 'utf8');
+            const lines = content.split(/\r?\n/);
+            const defines: string[] = [];
+            
+            if (motorType === 'compressor') {
+                const defineRegex = /^\s*#define\s+(COMP_[A-Z0-9_]+)\s+/;
+                for (const line of lines) {
+                    const match = line.match(defineRegex);
+                    if (match && match[1]) {
+                        defines.push(match[1]);
+                    }
+                }
+            } else { // 'fan'
+                const defineRegex = /^\s*#define\s+(MOTOR2_[A-Z0-9_]*FAN[A-Z0-9_]*)\s+/;
+            for (const line of lines) {
+                const match = line.match(defineRegex);
+                if (match && match[1]) {
+                        defines.push(match[1]);
+                    }
+                }
+            }
+            
+            return [...new Set(defines)];
+        } catch (error: any) {
+            this.outputChannel.appendLine(`[错误] 解析 Custom.h 文件时出错: ${error.message}`);
+            return [];
+        }
+    }
+
+    private async inputMotorTypes(configFileUri: vscode.Uri): Promise<{ motor1?: string, motor2?: string }> {
+        const availableFans = await this.parseMotorModels(configFileUri, 'fan');
+        const availableCompressors = await this.parseMotorModels(configFileUri, 'compressor');
+
+        const selectMotor = async (prompt: string, models: string[]): Promise<string | undefined> => {
+            const manualInput = '手动输入...';
+            const noSetting = '(不设置)';
+            const options = [noSetting, manualInput, ...models];
+    
+            const selection = await vscode.window.showQuickPick(options, {
+                placeHolder: prompt,
+                ignoreFocusOut: true
+            });
+    
+            if (!selection || selection === noSetting) {
+                return undefined;
+            }
+    
+            if (selection === manualInput) {
+                return await vscode.window.showInputBox({
+                    prompt: prompt,
+                    ignoreFocusOut: true
+                });
+            }
+            
+            return selection;
+        };
+    
+        // 修复：MOTOR1 是压缩机, MOTOR2 是风机
+        const motor1 = await selectMotor('请为 MOTOR1_TYPE (压缩机) 选择或输入一个型号', availableCompressors);
+        const motor2 = await selectMotor('请为 MOTOR2_TYPE (风机) 选择或输入一个型号', availableFans);
+    
+        return { motor1, motor2 };
+    }
+
+    /*
+     * 移除此函数，因为它不再被使用
+    private extractModelNameFromDefines(defines: string[], prefix: string): string | null {
         if (!defines) return null;
-        const modelRegex = /([A-Z0-9_]*KFW[A-Z0-9_]*)/;
+        
+        const modelRegex = new RegExp(`^${prefix}_[A-Z0-9_]*`);
         for (const define of defines) {
             const defineStr = define.split('=')[0].trim();
-            if (modelRegex.test(defineStr)) return defineStr;
+            if (modelRegex.test(defineStr)) {
+                return defineStr;
+            }
         }
+    
+        for (const define of defines) {
+            const defineStr = define.split('=')[0].trim();
+            if (defineStr.startsWith(prefix)) {
+                return defineStr;
+            }
+        }
+        
         return null;
     }
+    */
     
-    private generateEepromMacro(newModelName: string, eePromVersion?: string): string {
-        let baseName = newModelName;
-        const match = newModelName.match(/^([A-Z]+)_KFW(.+)$/);
-        if (match) {
-            const prefix = match[1], rest = match[2];
-            const restMatch = rest.match(/^([^_]+(?:_[^_]+)?)_(.+)$/);
-            if (restMatch) {
-                baseName = `${restMatch[1]}_${prefix}_${restMatch[2]}`;
-            } else {
-                 baseName = newModelName.replace(/^([A-Z]+)_/, '');
-            }
-        } else {
-            baseName = newModelName.replace(/^([A-Z]+)_/, '');
+    private generateEepromMacro(boardModel?: string, customerName?: string, eePromVersion?: string): string {
+        if (!boardModel || !customerName || !eePromVersion) {
+            throw new Error(`生成 EEPROMDATA 宏时缺少关键信息。`);
         }
-        return `EEPROMDATA_${baseName}${eePromVersion ? `_${eePromVersion}` : ''}`;
+    
+        const upperBoardModel = boardModel.toUpperCase();
+        const upperCustomerName = customerName.toUpperCase();
+        const upperEePromVersion = eePromVersion.toUpperCase();
+    
+        // 最终修复：根据用户指定的格式 "EEPROMDATA_{客户名}_{板卡型号(简化)}_{EE版本}" 来生成
+        // 例如: KFW72C_3_DC -> 72C_3
+        const simplifiedBoardModel = upperBoardModel
+            .replace(/^KFW/, '')       // 移除 KFW 前缀
+            .replace(/_(AC|DC)$/, '') // 移除 AC/DC 后缀
+            .replace(/^_/, '')       // 移除可能的前导下划线
+            .replace(/_$/, '');      // 移除可能的末尾下划线
+    
+        this.outputChannel.appendLine(`[调试] EEPROM 宏生成: 原始='${upperBoardModel}', 简化='${simplifiedBoardModel}'`);
+    
+        return `EEPROMDATA_${upperCustomerName}_${simplifiedBoardModel}_${upperEePromVersion}`;
     }
 
     private transformMacroToFilename(macro: string): string {
@@ -293,17 +518,17 @@ export class ModelCreator {
         
         const newModelBlock = lines.join('\n');
         
-        const models = this.parseExistingModels(document.getText());
-        const lastModel = models[models.length - 1];
-        if (!lastModel) throw new Error("无法确定最后一个机型的位置。");
-
-        const lastModelEndLine = document.lineAt(lastModel.endLine);
+        // 修复：精准定位到参考块之后的下一个预处理指令前，并插入
+        const insertionLine = this.findNextPreprocessorLine(document, referenceModel.endLine);
+        if (insertionLine === -1) {
+            throw new Error(`在 ${path.basename(document.fileName)} 中未找到有效的插入点。`);
+        }
 
         const edit = new vscode.WorkspaceEdit();
         const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
-        const contentToInsert = `${eol}${eol}${newModelBlock}`;
+        const contentToInsert = `${newModelBlock}${eol}`;
         
-        edit.insert(document.uri, lastModelEndLine.range.end, contentToInsert);
+        edit.insert(document.uri, new vscode.Position(insertionLine, 0), contentToInsert);
 
         if (await vscode.workspace.applyEdit(edit)) {
             vscode.window.showInformationMessage(`新机型 ${newModelName} 已成功创建！`);
@@ -393,7 +618,7 @@ export class ModelCreator {
         }
     }
 
-    private async updateCustomH(configFileUri: vscode.Uri, referenceModelName: string, newModelName: string): Promise<void> {
+    private async updateCustomH(configFileUri: vscode.Uri, referenceModel: ModelInfo, newModelName: string, motorTypes: { motor1?: string, motor2?: string }): Promise<void> {
         const customHPath = path.resolve(path.dirname(configFileUri.fsPath), '../../../Driver/DrivePublicFunction/DrivePublicFunction_No4/Custom.h');
         
         if (!fs.existsSync(customHPath)) {
@@ -412,29 +637,39 @@ export class ModelCreator {
                 return;
             }
 
-            const refModelBlockInfo = modelsInCustomH.find(m => m.name === referenceModelName);
-    
-            if (!refModelBlockInfo) {
-                this.outputChannel.appendLine(`[警告] 在 Custom.h 中未找到参考机型 ${referenceModelName} 的配置块，跳过更新。`);
-                return;
+            const motorLines: string[] = [];
+            if (motorTypes.motor1?.trim()) {
+                motorLines.push(`    #define MOTOR1_TYPE                     ${motorTypes.motor1.trim()}`);
             }
-    
-            const motorLines = refModelBlockInfo.configBlock.split(/\r?\n/).filter(line => 
-                line.trim().startsWith('#define MOTOR1_TYPE') || line.trim().startsWith('#define MOTOR2_TYPE')
-            );
+            if (motorTypes.motor2?.trim()) {
+                motorLines.push(`    #define MOTOR2_TYPE                     ${motorTypes.motor2.trim()}`);
+            }
     
             if (motorLines.length === 0) {
-                this.outputChannel.appendLine(`[信息] 参考机型 ${referenceModelName} 在 Custom.h 中没有 MOTOR 定义，跳过更新。`);
+                this.outputChannel.appendLine(`[信息] 未提供 MOTOR 定义，跳过 Custom.h 更新。`);
                 return;
             }
     
-            const newBlockContent = [`#elif ${newModelName}`, ...motorLines].join(eol);
+            const referenceModelInCustomH = modelsInCustomH.find(m => m.name === referenceModel.name);
+
+            // 修复：如果找不到参考机型，则不修改 Custom.h
+            if (!referenceModelInCustomH) {
+                this.outputChannel.appendLine(`[信息] 在 Custom.h 中未找到参考机型 ${referenceModel.name}，跳过更新。`);
+                return;
+            }
     
-            const lastModelInCustomH = modelsInCustomH[modelsInCustomH.length - 1];
+            const referenceLine = document.lineAt(referenceModelInCustomH.startLine).text;
+            const indentationMatch = referenceLine.match(/^(\s*)/);
+            const indentation = indentationMatch ? indentationMatch[1] : '';
+            const newBlockContent = [`#elif ${newModelName}`, ...motorLines].map(line => `${indentation}${line.trim()}`).join(eol);
+    
+            const insertionLine = this.findNextPreprocessorLine(document, referenceModelInCustomH.endLine);
+            if (insertionLine === -1) {
+                 throw new Error(`在 Custom.h 中未找到有效的插入点。`);
+            }
             
             const edit = new vscode.WorkspaceEdit();
-            const endOfLastBlock = document.lineAt(lastModelInCustomH.endLine).range.end;
-            edit.insert(document.uri, endOfLastBlock, eol + newBlockContent);
+            edit.insert(document.uri, new vscode.Position(insertionLine, 0), newBlockContent + eol);
     
             if (await vscode.workspace.applyEdit(edit)) {
                 vscode.window.showInformationMessage('Custom.h 已成功更新！');
@@ -489,5 +724,9 @@ export class ModelCreator {
             vscode.window.showErrorMessage(`处理 .bin 文件并执行 GenCode.bat 时出错: ${error.message}`);
             this.outputChannel.appendLine(`[错误] handleBinFileAndExecuteGenCode: ${error.stack}`);
         }
+    }
+
+    private findModelAtPosition(models: ModelInfo[], position: vscode.Position): ModelInfo | undefined {
+        return models.find(model => position.line >= model.startLine && position.line <= model.endLine);
     }
 }

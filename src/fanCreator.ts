@@ -57,7 +57,7 @@ export class FanCreator {
         }
     }
 
-    private async updateFiles(customHUri: vscode.Uri, referenceFan: { name: string, value: number }, newFanName: string, params: { poles: number, rs: number, ld: number, lq: number, ke: number }): Promise<void> {
+    private async updateFiles(customHUri: vscode.Uri, referenceFan: { name: string, value: number, line: number }, newFanName: string, params: { poles: number, rs: number, ld: number, lq: number, ke: number }): Promise<void> {
         const baseDir = path.dirname(customHUri.fsPath);
         const focDriverDir = path.resolve(baseDir, '../../FOCDcFanDriver/FOCDcFanDriver_No4');
         const focFansDir = path.join(focDriverDir, 'FocFans');
@@ -66,7 +66,7 @@ export class FanCreator {
         await this.createNewFanHeader(focFansDir, focDriverDir, referenceFan.name, newFanName, params);
 
         // 2. Update Custom.h
-        await this.updateCustomH(customHUri, newFanName);
+        await this.updateCustomH(customHUri, referenceFan, newFanName);
         
         // 3. Update customerInterface2.c
         const customerInterfacePath = path.join(focDriverDir, 'customerInterface2.c');
@@ -151,7 +151,7 @@ export class FanCreator {
         return fanModels;
     }
 
-    private async updateCustomH(uri: vscode.Uri, newFanName: string): Promise<void> {
+    private async updateCustomH(uri: vscode.Uri, referenceFan: { name: string, value: number, line: number }, newFanName: string): Promise<void> {
         const document = await vscode.workspace.openTextDocument(uri);
         const fanModels = this.getFanModels(document);
 
@@ -159,13 +159,12 @@ export class FanCreator {
             throw new Error('在 Custom.h 中未找到风机型号定义块。');
         }
 
-        const lastFan = fanModels[fanModels.length - 1];
-        const lastFanLine = document.lineAt(lastFan.line).text;
+        const refFanLine = document.lineAt(referenceFan.line).text;
         
         const newFanValue = Math.max(...fanModels.map(f => f.value)) + 1;
         const newFanDefine = `MOTOR2_${newFanName.toUpperCase()}`;
         
-        const valueMatch = lastFanLine.match(/\s+([0-9]+)/);
+        const valueMatch = refFanLine.match(/\s+([0-9]+)/);
         const valueColumn = valueMatch ? valueMatch.index! + valueMatch[0].length - valueMatch[1].length : 48;
 
         const definePart = `#define ${newFanDefine}`;
@@ -174,7 +173,7 @@ export class FanCreator {
         const newLine = `${definePart}${' '.repeat(spacesNeeded)}${newFanValue}`;
 
         const edit = new vscode.WorkspaceEdit();
-        edit.insert(uri, new vscode.Position(lastFan.line + 1, 0), newLine + '\n');
+        edit.insert(uri, new vscode.Position(referenceFan.line + 1, 0), newLine + '\n');
         await vscode.workspace.applyEdit(edit);
     }
 
@@ -246,11 +245,13 @@ export class FanCreator {
         await vscode.workspace.applyEdit(edit);
     }
 
-    private async selectReferenceFan(uri: vscode.Uri): Promise<{ name: string, value: number } | undefined> {
+    private async selectReferenceFan(uri: vscode.Uri): Promise<{ name: string, value: number, line: number } | undefined> {
         const document = await vscode.workspace.openTextDocument(uri);
         const fans = this.getFanModels(document).map(def => ({
+            label: def.name.replace('MOTOR2_', ''), // for QuickPick
             name: def.name.replace('MOTOR2_', ''),
-            value: def.value
+            value: def.value,
+            line: def.line
         }));
 
         if (fans.length === 0) {
@@ -258,12 +259,12 @@ export class FanCreator {
             return;
         }
 
-        const selected = await vscode.window.showQuickPick(fans.map(f => f.name), {
+        const selected = await vscode.window.showQuickPick(fans, {
             placeHolder: '请选择一个参考风机型号',
             ignoreFocusOut: true,
         });
         
-        return selected ? fans.find(f => f.name === selected) : undefined;
+        return selected ? { name: selected.name, value: selected.value, line: selected.line } : undefined;
     }
 
     private async inputNewFanName(defaultName: string): Promise<string | undefined> {
