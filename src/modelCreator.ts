@@ -96,9 +96,9 @@ export class ModelCreator {
 
             const newEepromMacro = this.generateEepromMacro(boardModel, customerName, eePromVersion);
 
-            await this.createModelConfiguration(document, referenceModel, newModelName, newEepromMacro, softwareVersion, customCodeName);
+            await this.createModelConfiguration(document, referenceModel, newModelName, newEepromMacro, softwareVersion, customCodeName, customerName);
             await this.updateGenCodeBat(document.uri, newEepromMacro);
-            await this.updateSystemParaC(document.uri, newEepromMacro, commonPrefix);
+            await this.updateSystemParaC(document.uri, referenceModel, newEepromMacro, customerName);
             await this.updateCustomH(document.uri, referenceModel, newModelName, motorTypes);
             await this.handleBinFileAndExecuteGenCode(document.uri, newEepromMacro);
 
@@ -446,28 +446,6 @@ export class ModelCreator {
     }
     */
     
-    private generateEepromMacro(boardModel?: string, customerName?: string, eePromVersion?: string): string {
-        if (!boardModel || !customerName || !eePromVersion) {
-            throw new Error(`生成 EEPROMDATA 宏时缺少关键信息。`);
-        }
-    
-        const upperBoardModel = boardModel.toUpperCase();
-        const upperCustomerName = customerName.toUpperCase();
-        const upperEePromVersion = eePromVersion.toUpperCase();
-    
-        // 最终修复：根据用户指定的格式 "EEPROMDATA_{客户名}_{板卡型号(简化)}_{EE版本}" 来生成
-        // 例如: KFW72C_3_DC -> 72C_3
-        const simplifiedBoardModel = upperBoardModel
-            .replace(/^KFW/, '')       // 移除 KFW 前缀
-            .replace(/_(AC|DC)$/, '') // 移除 AC/DC 后缀
-            .replace(/^_/, '')       // 移除可能的前导下划线
-            .replace(/_$/, '');      // 移除可能的末尾下划线
-    
-        this.outputChannel.appendLine(`[调试] EEPROM 宏生成: 原始='${upperBoardModel}', 简化='${simplifiedBoardModel}'`);
-    
-        return `EEPROMDATA_${upperCustomerName}_${simplifiedBoardModel}_${upperEePromVersion}`;
-    }
-
     private transformMacroToFilename(macro: string): string {
         const baseName = macro.replace(/^EEPROMDATA_/, '');
         const parts = baseName.split('_');
@@ -480,14 +458,39 @@ export class ModelCreator {
         return `eepromdata_${newParts.join('_')}`;
     }
 
-    private async createModelConfiguration(document: vscode.TextDocument, referenceModel: ModelInfo, newModelName: string, newEepromMacro: string, softwareVersion?: string, customCodeName?: string): Promise<void> {
+    private simplifyBoardModel(boardModel: string): string {
+        return boardModel.toUpperCase()
+            .replace(/^KFW/, '')       // 移除 KFW 前缀
+            .replace(/_(AC|DC)$/, '') // 移除 AC/DC 后缀
+            .replace(/^_/, '')       // 移除可能的前导下划线
+            .replace(/_$/, '');      // 移除可能的末尾下划线
+    }
+
+    private generateEepromMacro(boardModel?: string, customerName?: string, eePromVersion?: string): string {
+        if (!boardModel || !customerName || !eePromVersion) {
+            throw new Error(`生成 EEPROMDATA 宏时缺少关键信息。`);
+        }
+    
+        const upperCustomerName = customerName.toUpperCase();
+        const upperEePromVersion = eePromVersion.toUpperCase();
+    
+        const simplifiedBoardModel = this.simplifyBoardModel(boardModel);
+    
+        this.outputChannel.appendLine(`[调试] EEPROM 宏生成: 原始='${boardModel.toUpperCase()}', 简化='${simplifiedBoardModel}'`);
+    
+        return `EEPROMDATA_${upperCustomerName}_${simplifiedBoardModel}_${upperEePromVersion}`;
+    }
+
+    private async createModelConfiguration(document: vscode.TextDocument, referenceModel: ModelInfo, newModelName: string, newEepromMacro: string, softwareVersion: string | undefined, customCodeName: string | undefined, customerName: string): Promise<void> {
         let lines = referenceModel.configBlock.split('\n');
         
         lines[0] = lines[0].replace(referenceModel.name, newModelName).replace(/^#\s*if/, '#elif');
         
+        const fullCustomCodeName = customCodeName ? `${customerName.toUpperCase()}_${customCodeName}` : undefined;
+
         const macroProcessors = [
             { key: 'SOFTWARE_VERSION', value: softwareVersion, regex: /#define\s+SOFTWARE_VERSION/, createLine: (val: string) => `#define SOFTWARE_VERSION                (uint32_t)${val}        // 软件版本号` },
-            { key: 'CUSTOM_CODE_NAME', value: customCodeName, regex: /#define\s+CUSTOM_CODE_NAME/, createLine: (val: string) => `#define CUSTOM_CODE_NAME                "${val}"       // 客户料号名称 最长30字节` },
+            { key: 'CUSTOM_CODE_NAME', value: fullCustomCodeName, regex: /#define\s+CUSTOM_CODE_NAME/, createLine: (val: string) => `#define CUSTOM_CODE_NAME                "${val}"       // 客户料号名称 最长30字节` },
             { key: 'EEPROMDATA', value: newEepromMacro, regex: /#define\s+EEPROMDATA_/, createLine: null }
         ];
 
@@ -500,7 +503,7 @@ export class ModelCreator {
                      if (processor.key === 'SOFTWARE_VERSION') {
                         lines[lineIndex] = originalLine.replace(/0x[0-9a-fA-F]{8}/, softwareVersion!);
                      } else if (processor.key === 'CUSTOM_CODE_NAME') {
-                        lines[lineIndex] = originalLine.replace(/"[^"]*"/, `"${customCodeName!}"`);
+                        lines[lineIndex] = originalLine.replace(/"[^"]*"/, `"${fullCustomCodeName!}"`);
                      } else if (processor.key === 'EEPROMDATA') {
                         lines[lineIndex] = originalLine.replace(/EEPROMDATA_[^\s]+/, newEepromMacro);
                      }
@@ -518,17 +521,16 @@ export class ModelCreator {
         
         const newModelBlock = lines.join('\n');
         
-        // 修复：精准定位到参考块之后的下一个预处理指令前，并插入
-        const insertionLine = this.findNextPreprocessorLine(document, referenceModel.endLine);
-        if (insertionLine === -1) {
-            throw new Error(`在 ${path.basename(document.fileName)} 中未找到有效的插入点。`);
-        }
-
         const edit = new vscode.WorkspaceEdit();
         const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
-        const contentToInsert = `${newModelBlock}${eol}`;
+        // 最终修复 V5: 使用 WorkspaceEdit 的 replace 方法，确保在原始块后追加
+        const range = new vscode.Range(
+            new vscode.Position(referenceModel.startLine, 0),
+            new vscode.Position(referenceModel.endLine, document.lineAt(referenceModel.endLine).text.length)
+        );
+        const newContent = `${referenceModel.configBlock}${eol}${eol}${newModelBlock}`;
         
-        edit.insert(document.uri, new vscode.Position(insertionLine, 0), contentToInsert);
+        edit.replace(document.uri, range, newContent);
 
         if (await vscode.workspace.applyEdit(edit)) {
             vscode.window.showInformationMessage(`新机型 ${newModelName} 已成功创建！`);
@@ -567,9 +569,58 @@ export class ModelCreator {
         }
     }
 
-    private async updateSystemParaC(configFileUri: vscode.Uri, newEepromMacro: string, customerPrefix: string): Promise<void> {
-        const systemParaPath = path.resolve(path.dirname(configFileUri.fsPath), '../../User/SystemPara.c');
+    private deriveRefEepromMacro(referenceModel: ModelInfo, customerName: string): string | null {
+        this.outputChannel.appendLine(`[调试] 尝试从参考机型名称派生其 EEPROM 宏。`);
+        const { name } = referenceModel;
         
+        const parts = name.split('_');
+        if (parts.length < 2) {
+            this.outputChannel.appendLine(`[警告] 参考机型名称格式不规范，无法派生。`);
+            return null;
+        }
+
+        const refEePromVersion = parts[parts.length - 1];
+        const refBoardModel = this.extractBoardModelFromName(name);
+
+        if (!refBoardModel) {
+             this.outputChannel.appendLine(`[警告] 无法从参考机型名称中提取板卡型号。`);
+            return null;
+        }
+
+        const derivedMacro = this.generateEepromMacro(refBoardModel, customerName, refEePromVersion);
+        this.outputChannel.appendLine(`[调试] 派生出的参考宏: ${derivedMacro}`);
+        return derivedMacro;
+    }
+
+    private findEepromInsertionLine(document: vscode.TextDocument, searchPattern: RegExp): number {
+        const lines = document.getText().split(/\r?\n/);
+        this.outputChannel.appendLine(`[调试] SystemPara.c 正向搜索, 正则: ${searchPattern}`);
+
+        for (let i = 0; i < lines.length; i++) {
+            if (searchPattern.test(lines[i])) {
+                this.outputChannel.appendLine(`[调试] 在第 ${i + 1} 行找到匹配的 #elif。`);
+                // 从这个匹配行开始，向下找到块的结束位置
+                let blockEnd = i + 1;
+                while (blockEnd < lines.length) {
+                    const line = lines[blockEnd].trim();
+                    if (line.startsWith('#elif') || line.startsWith('#else') || line.startsWith('#endif')) {
+                        this.outputChannel.appendLine(`[调试] 块结束于第 ${blockEnd + 1} 行，将在此处插入。`);
+                        return blockEnd; // 返回下一个预处理指令的行号作为插入点
+                    }
+                    blockEnd++;
+                }
+                this.outputChannel.appendLine(`[调试] 这是文件末尾的块，将在文件末尾插入。`);
+                return lines.length;
+            }
+        }
+
+        this.outputChannel.appendLine(`[调试] 未找到匹配项。`);
+        return -1; // 未找到
+    }
+
+    private async updateSystemParaC(configFileUri: vscode.Uri, referenceModel: ModelInfo, newEepromMacro: string, customerPrefix: string): Promise<void> {
+        this.outputChannel.appendLine(`[调试] updateSystemParaC V5 (精准定位) LOGIC ENTRY`);
+        const systemParaPath = path.resolve(path.dirname(configFileUri.fsPath), '../../User/SystemPara.c');
         if (!fs.existsSync(systemParaPath)) {
             this.outputChannel.appendLine(`[警告] 在 ${systemParaPath} 未找到 SystemPara.c 文件，跳过更新。`);
             return;
@@ -578,33 +629,49 @@ export class ModelCreator {
         try {
             const document = await vscode.workspace.openTextDocument(systemParaPath);
             const text = document.getText();
-            const lines = text.split(/\r?\n/);
+            const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
             
-            const elseIndex = lines.findIndex(line => line.trim().startsWith('#else'));
-            if (elseIndex === -1) {
-                throw new Error("在 SystemPara.c 中未找到 #else 指令，无法确定插入位置。");
-            }
-            
-            let insertLineNum = elseIndex;
-            if(insertLineNum > 0 && lines[insertLineNum-1].trim() === ''){
-                insertLineNum--;
+            let insertionLine = -1;
+            let refEepromMacroName: string | null = null;
+
+            // 策略1: 尝试从 Config.h 的参考机型块中直接寻找 EEPROM 宏 (最高优先级)
+            const refEepromMatch = referenceModel.configBlock.match(/#define\s+(EEPROMDATA_[^\s]+)/);
+            if (refEepromMatch && refEepromMatch[1]) {
+                refEepromMacroName = refEepromMatch[1];
+                this.outputChannel.appendLine(`[调试] 策略1成功: 从 Config.h 找到参考宏 ${refEepromMacroName}`);
             }
 
-            const eepromNameLower = this.transformMacroToFilename(newEepromMacro);
-            const newBlock = `#elif  ${newEepromMacro}\r\n#include "CustomerConfig/${customerPrefix.toUpperCase()}/${eepromNameLower}.h"`;
+            // 策略2: 如果策略1失败，则根据参考机型名称智能推导其 EEPROM 宏
+            if (!refEepromMacroName) {
+                this.outputChannel.appendLine(`[调试] 策略1失败。尝试策略2: 根据机型名称推导宏。`);
+                refEepromMacroName = this.deriveRefEepromMacro(referenceModel, customerPrefix);
+            }
+
+            // 使用找到或推导出的宏来定位插入点
+            if (refEepromMacroName) {
+                const searchRegex = new RegExp(`^\\s*#elif\\s+${refEepromMacroName}\\b`);
+                insertionLine = this.findEepromInsertionLine(document, searchRegex);
+            }
+
+            // 策略3: 如果以上都失败，则回退到在 #else 前插入
+            if (insertionLine === -1) {
+                this.outputChannel.appendLine(`[警告] 所有智能定位方式都未能找到参考点，将插入到 #else 前。`);
+                const lines = text.split(/\r?\n/);
+                insertionLine = lines.findIndex(line => line.trim().startsWith('#else'));
+                if (insertionLine === -1) throw new Error("在 SystemPara.c 中未找到 #else 插入点。");
+            }
             
-            const macroCheckRegex = new RegExp(`\\b${newEepromMacro}\\b`);
-            if (macroCheckRegex.test(text)) {
+            const eepromNameLower = this.transformMacroToFilename(newEepromMacro);
+            const newBlock = `#elif ${newEepromMacro}${eol}#include "CustomerConfig/${customerPrefix.toUpperCase()}/${eepromNameLower}.h"`;
+            
+            if (text.includes(newEepromMacro)) {
                  vscode.window.showInformationMessage('SystemPara.c 中已存在相同宏定义，无需添加。');
                  return;
             }
 
+            this.outputChannel.appendLine(`[调试] 准备在 SystemPara.c 的第 ${insertionLine + 1} 行（从1开始计数）插入新宏块。`);
             const edit = new vscode.WorkspaceEdit();
-            const positionToInsert = new vscode.Position(insertLineNum, 0);
-            
-            const contentToInsert = `${newBlock}\r\n`;
-
-            edit.replace(document.uri, new vscode.Range(positionToInsert, positionToInsert), contentToInsert);
+            edit.insert(document.uri, new vscode.Position(insertionLine, 0), newBlock + eol);
 
             if (await vscode.workspace.applyEdit(edit)) {
                 vscode.window.showInformationMessage('SystemPara.c 已成功更新！');
@@ -620,21 +687,19 @@ export class ModelCreator {
 
     private async updateCustomH(configFileUri: vscode.Uri, referenceModel: ModelInfo, newModelName: string, motorTypes: { motor1?: string, motor2?: string }): Promise<void> {
         const customHPath = path.resolve(path.dirname(configFileUri.fsPath), '../../../Driver/DrivePublicFunction/DrivePublicFunction_No4/Custom.h');
-        
         if (!fs.existsSync(customHPath)) {
-            this.outputChannel.appendLine(`[警告] 在 ${customHPath} 未找到 Custom.h 文件，跳过更新。`);
+            vscode.window.showWarningMessage(`Custom.h 文件未找到，路径: ${customHPath}`);
             return;
         }
-    
+
         try {
             const document = await vscode.workspace.openTextDocument(customHPath);
             const text = document.getText();
             const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
             
             const modelsInCustomH = this.parseExistingModels(text);
-            if (modelsInCustomH.length === 0) {
-                this.outputChannel.appendLine(`[警告] 在 Custom.h 中未找到任何机型配置块，跳过更新。`);
-                return;
+            if (!modelsInCustomH.length) {
+                throw new Error("在 Custom.h 中未能解析出任何机型。");
             }
 
             const motorLines: string[] = [];
@@ -644,29 +709,47 @@ export class ModelCreator {
             if (motorTypes.motor2?.trim()) {
                 motorLines.push(`    #define MOTOR2_TYPE                     ${motorTypes.motor2.trim()}`);
             }
-    
+
             if (motorLines.length === 0) {
-                this.outputChannel.appendLine(`[信息] 未提供 MOTOR 定义，跳过 Custom.h 更新。`);
+                this.outputChannel.appendLine('[信息] 没有提供 MOTOR 类型，跳过更新 Custom.h。');
                 return;
             }
-    
+
             const referenceModelInCustomH = modelsInCustomH.find(m => m.name === referenceModel.name);
 
-            // 修复：如果找不到参考机型，则不修改 Custom.h
             if (!referenceModelInCustomH) {
                 this.outputChannel.appendLine(`[信息] 在 Custom.h 中未找到参考机型 ${referenceModel.name}，跳过更新。`);
                 return;
             }
-    
+            this.outputChannel.appendLine(`[调试] 在 Custom.h 中找到参考机型 ${referenceModel.name}，范围：行 ${referenceModelInCustomH.startLine + 1} 到 ${referenceModelInCustomH.endLine + 1}。`);
+            
             const referenceLine = document.lineAt(referenceModelInCustomH.startLine).text;
             const indentationMatch = referenceLine.match(/^(\s*)/);
             const indentation = indentationMatch ? indentationMatch[1] : '';
-            const newBlockContent = [`#elif ${newModelName}`, ...motorLines].map(line => `${indentation}${line.trim()}`).join(eol);
-    
+
+            const { valueColumn, innerIndentation } = this.calculateAlignment(document, referenceModelInCustomH);
+            this.outputChannel.appendLine(`[调试] 计算对齐：值起始列=${valueColumn}, 内部缩进='${innerIndentation.replace(/\s/g, '·')}'`);
+
+            const motorLinesFormatted: string[] = [];
+            if (motorTypes.motor1?.trim()) {
+                const definePart = `${innerIndentation}#define MOTOR1_TYPE`;
+                const spacesNeeded = Math.max(1, valueColumn - this.getVisualLength(definePart));
+                motorLinesFormatted.push(`${definePart}${' '.repeat(spacesNeeded)}${motorTypes.motor1.trim()}`);
+            }
+            if (motorTypes.motor2?.trim()) {
+                const definePart = `${innerIndentation}#define MOTOR2_TYPE`;
+                const spacesNeeded = Math.max(1, valueColumn - this.getVisualLength(definePart));
+                motorLinesFormatted.push(`${definePart}${' '.repeat(spacesNeeded)}${motorTypes.motor2.trim()}`);
+            }
+
+            const newBlockContent = [`${indentation}#elif ${newModelName}`, ...motorLinesFormatted].join(eol);
+            
             const insertionLine = this.findNextPreprocessorLine(document, referenceModelInCustomH.endLine);
             if (insertionLine === -1) {
-                 throw new Error(`在 Custom.h 中未找到有效的插入点。`);
+                this.outputChannel.appendLine(`[错误] 在 Custom.h 中未找到有效的插入点 (在第 ${referenceModelInCustomH.endLine + 1} 行之后)。`);
+                throw new Error(`在 Custom.h 中未找到有效的插入点。`);
             }
+            this.outputChannel.appendLine(`[调试] 准备在 Custom.h 的第 ${insertionLine + 1} 行插入新机型块。`);
             
             const edit = new vscode.WorkspaceEdit();
             edit.insert(document.uri, new vscode.Position(insertionLine, 0), newBlockContent + eol);
@@ -681,6 +764,54 @@ export class ModelCreator {
              vscode.window.showErrorMessage(`更新 Custom.h 失败: ${error.message}`);
              this.outputChannel.appendLine(`[错误] 更新 Custom.h 时出错: ${error.stack}`);
         }
+    }
+
+    private getVisualLength(text: string): number {
+        // 将 Tab 替换为4个空格来计算视觉长度
+        return text.replace(/\t/g, '    ').length;
+    }
+
+    private calculateAlignment(document: vscode.TextDocument, referenceModel: ModelInfo): { valueColumn: number, innerIndentation: string } {
+        let valueColumn = 0;
+        let innerIndentation = '';
+        const startLine = referenceModel.startLine;
+        const endLine = this.findNextPreprocessorLine(document, startLine) - 1;
+        let foundFirstDefine = false;
+
+        this.outputChannel.appendLine(`[调试] calculateAlignment V4 (Tab-aware): 分析第 ${startLine + 1} 到 ${endLine + 1} 行。`);
+
+        for (let i = startLine + 1; i <= endLine && i < document.lineCount; i++) {
+            const lineText = document.lineAt(i).text;
+            if (lineText.trim() === '') continue;
+
+            const match = lineText.match(/^(\s*#define\s+[A-Z0-9_]+\s+)/);
+            if (match) {
+                if (!foundFirstDefine) {
+                    const indentMatch = lineText.match(/^(\s*)/);
+                    innerIndentation = indentMatch ? indentMatch[1] : '    ';
+                    foundFirstDefine = true;
+                }
+                
+                const currentColumn = this.getVisualLength(match[1]);
+                if (currentColumn > valueColumn) {
+                    valueColumn = currentColumn;
+                }
+            }
+        }
+        
+        if (!foundFirstDefine) {
+            const elifIndentation = (document.lineAt(startLine).text.match(/^(\s*)/) || ['',''])[1];
+            innerIndentation = elifIndentation + '    ';
+            valueColumn = this.getVisualLength(`${innerIndentation}#define MOTOR2_TYPE `); 
+            this.outputChannel.appendLine(`[调试] 未找到 #define，使用默认对齐。`);
+        } else {
+            const minLength1 = this.getVisualLength(`${innerIndentation}#define MOTOR1_TYPE `);
+            const minLength2 = this.getVisualLength(`${innerIndentation}#define MOTOR2_TYPE `);
+            valueColumn = Math.max(valueColumn, minLength1, minLength2);
+            this.outputChannel.appendLine(`[调试] 在参考块中找到的最宽视觉对齐列为: ${valueColumn}`);
+        }
+
+        return { valueColumn, innerIndentation };
     }
 
     private async handleBinFileAndExecuteGenCode(configFileUri: vscode.Uri, newEepromMacro: string): Promise<void> {

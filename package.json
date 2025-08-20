@@ -1,8 +1,8 @@
 {
   "name": "vscode-model-creator",
   "displayName": "Model Creator",
-  "description": "Streamlines the creation of new machine model configurations for embedded C/C++ projects by automating multiple file updates.",
-  "version": "0.0.4",
+  "description": "Streamlines the creation of new machine model configurations for embedded C/++ projects by automating multiple file updates.",
+  "version": "0.1.1",
   "publisher": "Troy",
   "repository": {
     "type": "git",
