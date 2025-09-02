@@ -152,28 +152,63 @@ export class FanCreator {
     }
 
     private async updateCustomH(uri: vscode.Uri, referenceFan: { name: string, value: number, line: number }, newFanName: string): Promise<void> {
+        // FINAL, DEFINITIVE STRATEGY 11.0: Find boundaries, delete everything in between, and rebuild correctly.
+
         const document = await vscode.workspace.openTextDocument(uri);
         const fanModels = this.getFanModels(document);
+        const lines = document.getText().split(/\r?\n/);
 
         if (fanModels.length === 0) {
             throw new Error('在 Custom.h 中未找到风机型号定义块。');
         }
+        
+        // 1. Find the anchor line index.
+        const anchorRegex = /^\s*#if\s*\(\s*MODEL_TYPE\s*==\s*MODEL_YUETU_AIRCONDITION\s*\)/;
+        const anchorIndex = lines.findIndex(line => anchorRegex.test(line));
 
-        const refFanLine = document.lineAt(referenceFan.line).text;
+        if (anchorIndex === -1) {
+            throw new Error(`在 Custom.h 中未能使用正则表达式定位到锚点 "#if (MODEL_TYPE == MODEL_YUETU_AIRCONDITION)"。请检查该行是否存在。`);
+        }
         
-        const newFanValue = Math.max(...fanModels.map(f => f.value)) + 1;
-        const newFanDefine = `MOTOR2_${newFanName.toUpperCase()}`;
+        // 2. Scan FORWARDS to find the *actual* last fan definition before the anchor.
+        let lastFanInBlockIndex = -1;
+        const fanRegex = /^\s*#define\s+MOTOR2_/;
+        for (let i = 0; i < anchorIndex; i++) {
+            if (fanRegex.test(lines[i])) {
+                lastFanInBlockIndex = i;
+            }
+        }
         
-        const valueMatch = refFanLine.match(/\s+([0-9]+)/);
+        if (lastFanInBlockIndex === -1) {
+            throw new Error(`在锚点 "#if..." 上方未能找到任何有效的 "#define MOTOR2_" 风机定义。`);
+        }
+
+        const alignmentLine = document.lineAt(lastFanInBlockIndex);
+        
+        // 3. Calculate alignment based on the true last line.
+        const valueMatch = alignmentLine.text.match(/\s+([0-9]+)/);
         const valueColumn = valueMatch ? valueMatch.index! + valueMatch[0].length - valueMatch[1].length : 48;
 
+        // 4. Construct the new line content.
+        const newFanValue = Math.max(...fanModels.map(f => f.value)) + 1;
+        const newFanDefine = `MOTOR2_${newFanName.toUpperCase()}`;
         const definePart = `#define ${newFanDefine}`;
         const spacesNeeded = Math.max(1, valueColumn - definePart.length);
-        
-        const newLine = `${definePart}${' '.repeat(spacesNeeded)}${newFanValue}`;
+        const newLineContent = `${definePart}${' '.repeat(spacesNeeded)}${newFanValue}`;
 
+        // 5. Delete the space between the last fan and the anchor, then insert the new macro with a blank line.
         const edit = new vscode.WorkspaceEdit();
-        edit.insert(uri, new vscode.Position(referenceFan.line + 1, 0), newLine + '\n');
+        const eol = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
+
+        // Define the range to be replaced: from the line after the last fan to the line just before the anchor.
+        const startReplacePos = new vscode.Position(lastFanInBlockIndex + 1, 0);
+        const endReplacePos = new vscode.Position(anchorIndex, 0);
+        const rangeToDelete = new vscode.Range(startReplacePos, endReplacePos);
+
+        // The content to insert: the new macro, followed by a blank line.
+        const contentToInsert = newLineContent + eol + eol;
+        
+        edit.replace(uri, rangeToDelete, contentToInsert);
         await vscode.workspace.applyEdit(edit);
     }
 
